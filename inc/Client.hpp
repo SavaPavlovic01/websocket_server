@@ -14,6 +14,9 @@
 #include "Response.hpp"
 #include <openssl/sha.h>
 #include "base64.hpp"
+#include "MsgBuilder.hpp"
+#include <poll.h>
+#include "MsgReader.hpp"
 
 class Client{
 public:
@@ -62,12 +65,27 @@ public:
             resp.sendWebSocketHandShakeResponse(clientSocket, base64::to_base64((char*) hash));
             
             logger.logInfo("Sent handshake response");
+
+            MsgReader reader(-1);
+            try{
+                auto res = reader.getMsg(clientSocket);
+                logger.logInfo(res.value());
+            }
+            catch(const std::exception& e){
+                std::cerr << e.what() << '\n';
+            }
+            MsgBuilder msg;
+            msg.setDataType(DataType::TEXT);
+            msg.sendMsg("Hello", clientSocket);
             break;
         }
 
     }
 
 private:
+
+    
+
     int sleepTime;
     const int clientSocket;
     Logger& logger;
