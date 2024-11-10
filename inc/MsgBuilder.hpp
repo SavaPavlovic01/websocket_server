@@ -11,7 +11,8 @@
 enum class DataType{
     FRAGMENT,
     TEXT,
-    BINARY
+    BINARY,
+    CLOSING = 0x8
 };
 
 class MsgBuilder{
@@ -29,6 +30,10 @@ public:
         mask = true;
     }
 
+    void setCode(const uint16_t code){
+        this->code = htons(code);
+    }
+
     bool sendMsg(const std::string_view msg, const int socket){
         uint8_t firstByte = 0;
         if(finBit) firstByte |= 0x80;   
@@ -39,6 +44,7 @@ public:
         write(socket, &firstByte, 1);
 
         uint64_t payloadLen = msg.length();
+        if(code != 0) payloadLen += 3;
         uint8_t secondByte = 0;
         if(mask) secondByte |= 0x80;
         if(payloadLen <= 125){
@@ -60,7 +66,10 @@ public:
         if(mask){
             write(socket, &maskKey, 4);
         }
-
+        if(code != 0) {
+            write(socket, &code, 2);
+            write(socket, " ", 1);
+        }
         write(socket, msg.data(), msg.length());
         return true;
     }
@@ -73,4 +82,5 @@ private:
     uint8_t opcode;
     bool mask = false;
     uint32_t maskKey;
+    uint16_t code = 0;
 };

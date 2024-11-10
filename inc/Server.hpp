@@ -20,6 +20,8 @@ class Server{
         struct in_addr socket_addr;
         socket_addr.s_addr = htonl(INADDR_LOOPBACK);
         my_addr.sin_addr = socket_addr;
+        int opt = 1;
+        setsockopt(tcpSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
         if(bind(tcpSocket, (struct sockaddr *)&my_addr, sizeof(my_addr)) != 0){
             logger_.logError("Server failed on bind");
             exit(-1);
@@ -45,7 +47,8 @@ class Server{
                 logger_.logError("Accept failed");
                 continue;
             }
-                
+            int opt = 1;
+            setsockopt(client_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
             logger_.logInfo("Client connected");
             clients.push_back(Client(client_socket, logger_, client_socket));
             std::thread clientThread(&Client::run, clients.back());

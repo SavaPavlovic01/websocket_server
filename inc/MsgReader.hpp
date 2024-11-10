@@ -7,12 +7,17 @@
 #include <optional>
 #include "MsgBuilder.hpp"
 
+typedef struct WSMsg{
+    DataType opcode;
+    std::string msg;
+} WSMsg;
+
 class MsgReader{
 public:
     MsgReader(const int timeout):timeout(timeout){}
 
     // blocks if timeout = -1
-    std::optional<std::string> getMsg(const int socket){
+    std::optional<WSMsg> getMsg(const int socket){
         if(hasDataToRead(socket)){
             uint8_t firstByte;
             recv(socket, &firstByte, 1, 0);
@@ -25,6 +30,7 @@ public:
                 case 0x00: dt = DataType::FRAGMENT; break;
                 case 0x01: dt = DataType::TEXT; break;
                 case 0x02: dt = DataType::BINARY; break;
+                case 0x08: dt = DataType::CLOSING; break;
                 default: throw std::invalid_argument("invalid opcode"); break;
             }
 
@@ -52,7 +58,7 @@ public:
                 msg[i] = (msg[i] ^ curKey);
             }
 
-            return std::string(msg);
+            return WSMsg{dt, std::string(msg)};
 
         }else return std::nullopt;
     }
